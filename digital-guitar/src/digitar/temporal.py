@@ -4,6 +4,7 @@ from fractions import Fraction
 from typing import TypeAlias
 
 Numeric: TypeAlias = int | float | Decimal | Fraction
+type Hertz = int | float
 
 @dataclass(frozen=True)
 class Time:
@@ -27,3 +28,6 @@ class Time:
                 raise TypeError(
                     f"unsupported type '{type(seconds).__name__}'"
                 )
+                
+    def get_num_samples(self, sampling_rate: Hertz) -> int:
+        return round(self.seconds * round(sampling_rate))
