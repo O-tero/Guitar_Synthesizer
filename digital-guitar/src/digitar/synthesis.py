@@ -39,9 +39,9 @@ class Synthesizer:
                 next_sample = buffer[(i + 1) % buffer.size]
                 buffer[i] = (current_sample + next_sample) * damping
                 
-       return np.fromiter(
-            feedback_loop(),
-            np.float64,
-            duration.get_num_samples(self.sampling_rate),
-        )
-       
+            return np.fromiter(
+                feedback_loop(),
+                np.float64,
+                duration.get_num_samples(self.sampling_rate),
+            )
+        
