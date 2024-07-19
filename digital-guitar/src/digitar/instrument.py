@@ -1,7 +1,9 @@
 from dataclasses import dataclass
+from functools import cache, cached_property
 from functools import cached_property
 from typing import Self
 
+from digitar.chord import Chord
 from digitar.pitch import Pitch
 from digitar.temporal import Time
 
@@ -42,3 +44,17 @@ class PluckedStringInstrument:
     @cached_property
     def num_strings(self) -> int:
         return len(self.tuning.strings)
+
+    @cache
+    def downstroke(self, chord: Chord) -> tuple[Pitch, ...]:
+        return tuple(reversed(self.upstroke(chord)))
+
+    @cache
+    def upstroke(self, chord: Chord) -> tuple[Pitch, ...]:
+        if len(chord) != self.num_strings:
+            raise ValueError("chord and instrument must have the same string count")
+        return tuple(
+            string.press_fret(fret_number)
+            for string, fret_number in zip(self.tuning.strings, chord)
+            if fret_number is not None
+        )
