@@ -1,10 +1,15 @@
 from itertools import cycle
 from typing import Iterator
 
+from pedalboard.io import AudioFile
+
 from digitar.chord import Chord
 from digitar.instrument import PluckedStringInstrument, StringTuning
+from digitar.processing import normalize
 from digitar.stroke import Velocity
 from digitar.synthesis import Synthesizer
+from digitar.temporal import Time, Timeline
+from digitar.track import AudioTrack
 from digitar.temporal import Time
 
 
@@ -15,8 +20,17 @@ def main() -> None:
         damping=0.498,
     )
     synthesizer = Synthesizer(ukulele)
+    audio_track = AudioTrack(synthesizer.sampling_rate)
+    timeline = Timeline()
+    for interval, chord, stroke in strumming_pattern():
+        audio_samples = synthesizer.strum_strings(chord, stroke)
+        audio_samples = synthesizer.strum_strings(chord, stroke)
+        audio_track.add_at(timeline.instant, audio_samples)
+        timeline >> interval
 
-
+    with AudioFile("chorus.mp3", "w", audio_track.sampling_rate) as file:
+        file.write(normalize(audio_track.samples))
+    
 def strumming_pattern() -> Iterator[tuple[float, Chord, Velocity]]:
     chords = (
         Chord.from_numbers(0, 0, 0, 3),
