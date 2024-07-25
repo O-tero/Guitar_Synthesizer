@@ -46,7 +46,20 @@ def main() -> None:
     synthesizer = Synthesizer(acoustic_guitar)
     audio_track = AudioTrack(synthesizer.sampling_rate)
     timeline = MeasuredTimeline(measure=MeasureTiming.MEASURE)
+    for measure in measures(timeline):
+        for stroke in measure:
+            audio_track.add_at(
+                stroke.instant,
+                synthesizer.strum_strings(stroke.chord, stroke.velocity),
+            )
     save(audio_track, "diablo.mp3")
+
+
+def measures(timeline: MeasuredTimeline) -> tuple[tuple[Stroke, ...], ...]:
+    return (
+        measure_01(timeline),
+        measure_02(timeline),
+    )
 
 
 def save(audio_track: AudioTrack, filename: str) -> None:
@@ -54,11 +67,13 @@ def save(audio_track: AudioTrack, filename: str) -> None:
         file.write(normalize(audio_track.samples))
     print(f"\nSaved file {filename!r}")
 
+
 @dataclass(frozen=True)
 class Stroke:
     instant: Time
     chord: Chord
     velocity: Velocity
+
 
 if __name__ == "__main__":
     main()
