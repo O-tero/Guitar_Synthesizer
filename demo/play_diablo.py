@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from fractions import Fraction
 
+import numpy as np
+from pedalboard import Convolution, Gain, LowShelfFilter, Pedalboard, Reverb
 from pedalboard.io import AudioFile
 
 from digitar.chord import chord
@@ -37,6 +39,13 @@ class StrummingSpeed:
     SUPER_FAST = Time.from_milliseconds(5)
 
 
+@dataclass(frozen=True)
+class Stroke:
+    instant: Time
+    chord: Chord
+    velocity: Velocity
+
+
 def main() -> None:
     acoustic_guitar = PluckedStringInstrument(
         tuning=StringTuning.from_notes("E2", "A2", "D3", "G3", "B3", "E4"),
@@ -64,15 +73,20 @@ def measures(timeline: MeasuredTimeline) -> tuple[tuple[Stroke, ...], ...]:
 
 def save(audio_track: AudioTrack, filename: str) -> None:
     with AudioFile(filename, "w", audio_track.sampling_rate) as file:
-        file.write(normalize(audio_track.samples))
+        file.write(normalize(apply_effects(audio_track)))
     print(f"\nSaved file {filename!r}")
 
 
-@dataclass(frozen=True)
-class Stroke:
-    instant: Time
-    chord: Chord
-    velocity: Velocity
+def apply_effects(audio_track: AudioTrack) -> np.ndarray:
+    effects = Pedalboard(
+        [
+            Reverb(),
+            Convolution(impulse_response_filename="ir/accoustic.wav", mix=0.95),
+            LowShelfFilter(cutoff_frequency_hz=440, gain_db=10, q=1),
+            Gain(gain_db=6),
+        ]
+    )
+    return effects(audio_track.samples, audio_track.sampling_rate)
 
 
 if __name__ == "__main__":
