@@ -1,4 +1,6 @@
+import os
 from argparse import ArgumentParser, Namespace
+from contextlib import contextmanager
 from fractions import Fraction
 from pathlib import Path
 
@@ -33,18 +35,29 @@ def parse_args() -> Namespace:
 
 def play(args: Namespace) -> None:
     song = models.Song.from_file(args.path)
-    samples = normalize(
-        np.sum(
-            pad_to_longest(
-                [track.weight * synthesize(track) for track in song.tracks.values()]
-            ),
-            axis=0,
+    with chdir(args.path.parent):
+        samples = normalize(
+            np.sum(
+                pad_to_longest(
+                    [track.weight * synthesize(track) for track in song.tracks.values()]
+                ),
+                axis=0,
+            )
         )
-    )
-    save(
-        samples,
-        args.output or Path.cwd() / args.path.with_suffix(".mp3").name,
-    )
+        save(
+            samples,
+            args.output or Path.cwd() / args.path.with_suffix(".mp3").name,
+        )
+
+
+@contextmanager
+def chdir(path: Path) -> None:
+    current_dir = os.getcwd()
+    os.chdir(directory)
+    try:
+        yield
+    finally:
+        os.chdir(current_dir)
 
 
 def pad_to_longest(tracks: list[np.ndarray]) -> list[np.ndarray]:
