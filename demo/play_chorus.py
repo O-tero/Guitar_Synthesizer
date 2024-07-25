@@ -1,6 +1,7 @@
 from itertools import cycle
 from typing import Iterator
 
+from pedalboard import Convolution, Gain, LowShelfFilter, Pedalboard, Reverb
 from pedalboard.io import AudioFile
 
 from digitar.chord import Chord
@@ -27,9 +28,18 @@ def main() -> None:
         audio_samples = synthesizer.strum_strings(chord, stroke)
         audio_track.add_at(timeline.instant, audio_samples)
         timeline >> interval
+    effects = Pedalboard(
+        [
+            Reverb(),
+            Convolution(impulse_response_filename="ir/ukulele.wav", mix=0.95),
+            LowShelfFilter(cutoff_frequency_hz=440, gain_db=10, q=1),
+            Gain(gain_db=15),
+        ]
+    )
+    samples = effects(audio_track.samples, audio_track.sampling_rate)
 
     with AudioFile("chorus.mp3", "w", audio_track.sampling_rate) as file:
-        file.write(normalize(audio_track.samples))
+        file.write(normalize(samples))
     
 def strumming_pattern() -> Iterator[tuple[float, Chord, Velocity]]:
     chords = (
