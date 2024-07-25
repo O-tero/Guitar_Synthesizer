@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from fractions import Fraction
 from typing import TypeAlias
@@ -42,7 +42,18 @@ class Time:
             case _:
                 raise TypeError(f"can't add '{type(seconds).__name__}'")
             
-            
+    def __mul__(self, seconds: Numeric) -> Self:
+        match seconds:
+            case int() | Decimal():
+                return Time(self.seconds * seconds)
+            case float():
+                return Time(self.seconds * Decimal(str(seconds)))
+            case Fraction():
+                return Time(Fraction.from_decimal(self.seconds) * seconds)
+            case _:
+                raise TypeError(f"can't multiply by '{type(seconds).__name__}'")
+    
+    
     def get_num_samples(self, sampling_rate: Hertz) -> int:
         return round(self.seconds * round(sampling_rate))
     
@@ -52,4 +63,23 @@ class Timeline:
     
     def __rshift__(self, seconds: Numeric | Time) _ Self:
         self.instant += seconds
+        return self
+    
+@dataclass
+class MeausredTimeline(Timeline):
+    measure: Time(seconds=0)
+    last_measure_ended_at: Time = field(init=False, repr=False)
+    
+    def __post_init__(self) -> None:
+        if self.measure.seconds > 0 and self.instant.seconds > 0:
+            periods = self.instant.seconds // self.measure.seconds
+            self.last_measure_ended_at = Time(periods * self.measure.seconds)
+        else:
+            self.last_measure_ended_at = Time(seconds=0)
+            
+    def __next__(self) -> Self:
+        if self.measure.seconds <= 0:
+            raise ValueError("measure duration must be positive")
+        self.last_measure_ended_at += self.measure
+        self.instant = self.last_measure_ended_at
         return self
