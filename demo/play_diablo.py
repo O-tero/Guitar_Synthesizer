@@ -1,5 +1,14 @@
+from dataclasses import dataclass
 from fractions import Fraction
 
+from pedalboard.io import AudioFile
+
+from digitar.chord import chord
+from digitar.instrument import PluckedStringInstrument, StringTuning
+from digitar.stroke import Velocity
+from digitar.processing import normalize
+from digitar.synthesis import Synthesizer
+from digitar.temporal import MeasuredTimeline, Time
 from digitar.temporal import Time
 
 BEATS_PER_MINUTE = 75
@@ -26,3 +35,30 @@ class StrummingSpeed:
     SLOW = Time.from_milliseconds(40)
     FAST = Time.from_milliseconds(20)
     SUPER_FAST = Time.from_milliseconds(5)
+
+
+def main() -> None:
+    acoustic_guitar = PluckedStringInstrument(
+        tuning=StringTuning.from_notes("E2", "A2", "D3", "G3", "B3", "E4"),
+        vibration=Time(seconds=10),
+        damping=0.498,
+    )
+    synthesizer = Synthesizer(acoustic_guitar)
+    audio_track = AudioTrack(synthesizer.sampling_rate)
+    timeline = MeasuredTimeline(measure=MeasureTiming.MEASURE)
+    save(audio_track, "diablo.mp3")
+
+
+def save(audio_track: AudioTrack, filename: str) -> None:
+    with AudioFile(filename, "w", audio_track.sampling_rate) as file:
+        file.write(normalize(audio_track.samples))
+    print(f"\nSaved file {filename!r}")
+
+@dataclass(frozen=True)
+class Stroke:
+    instant: Time
+    chord: Chord
+    velocity: Velocity
+
+if __name__ == "__main__":
+    main()
